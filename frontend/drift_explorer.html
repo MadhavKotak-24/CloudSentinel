@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Drift Explorer - Compare Terraform declared variables templates with live deployed AWS cloud configurations and track timeline histories.">
+  <title>CloudSentinel — Drift Explorer</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <!-- Page Header -->
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Infrastructure Drift Explorer</h1>
+          <p class="page-subtitle">Detailed side-by-side declarative comparison and chronological compliance timelines</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary btn-sm" id="btn-sync-state" style="display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px var(--color-primary-glow);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            Resync State
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Drift Statistics Widgets -->
+      <div class="dashboard-stats" style="grid-template-columns: repeat(4, 1fr); margin-bottom: var(--space-6);">
+        <!-- Scanned Assets Tally -->
+        <div class="stat-card primary animate-fade-in-up stagger-1">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Total Scanned Assets</div>
+              <div class="stat-card-value" id="stat-scanned-assets">0</div>
+            </div>
+            <div class="stat-card-icon primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+            </div>
+          </div>
+          <span class="stat-card-change up">↑ Coverage audit</span>
+        </div>
+
+        <!-- Active Drifts Count -->
+        <div class="stat-card warning animate-fade-in-up stagger-2">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Active Drifts</div>
+              <div class="stat-card-value" id="stat-active-drifts" style="color: var(--color-warning);">0</div>
+            </div>
+            <div class="stat-card-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+          </div>
+          <span class="stat-card-change down">Discrepancies found</span>
+        </div>
+
+        <!-- Drift Coverage Index -->
+        <div class="stat-card success animate-fade-in-up stagger-3">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Drift Compliance Rate</div>
+              <div class="stat-card-value" id="stat-drift-coverage">0%</div>
+            </div>
+            <div class="stat-card-icon success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </div>
+          </div>
+          <span class="stat-card-change up">↑ Inline status</span>
+        </div>
+
+        <!-- Unmitigated Drifts alert -->
+        <div class="stat-card critical pulsing-alert-glow animate-fade-in-up stagger-4" id="stat-unmitigated-card">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label" style="color: var(--color-critical); font-weight: var(--weight-bold);">Unmitigated Drifts</div>
+              <div class="stat-card-value" id="stat-unmitigated">0</div>
+            </div>
+            <div class="stat-card-icon critical">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+          </div>
+          <span class="stat-card-change down">⚠️ Remediation needed</span>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Comparison Panels Grid -->
+      <div class="table-container animate-fade-in-up stagger-2" style="padding: var(--space-5); margin-bottom: var(--space-6);">
+        <div class="flex items-center justify-between" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-3); margin-bottom: var(--space-5);">
+          <h3 class="table-title flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--color-warning);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            Resource Configuration Comparison (IaC vs Cloud)
+          </h3>
+          
+          <div class="form-group" style="margin-bottom: 0;">
+            <select id="comp-resource-select" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 250px;">
+              <option value="sg">aws_security_group.web_sg</option>
+              <option value="s3">aws_s3_bucket.internal_vault</option>
+              <option value="iam">aws_iam_role.admin_exec</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="drift-comparison-panel">
+          <!-- Declared expected state card -->
+          <div>
+            <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);" class="flex items-center gap-2">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary);"></span>
+              Declared expected state (Terraform)
+            </h4>
+            <div class="config-code-card" id="expected-config-container"><!-- JS Populates --></div>
+          </div>
+
+          <!-- Deployed actual cloud state card -->
+          <div>
+            <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);" class="flex items-center gap-2">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-warning);"></span>
+              Deployed actual state (AWS live cloud)
+            </h4>
+            <div class="config-code-card" id="actual-config-container"><!-- JS Populates --></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chronological Drift Timeline & History -->
+      <div class="table-container animate-fade-in-up stagger-3">
+        <div class="table-header" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-3); margin-bottom: var(--space-4);">
+          <h3 class="table-title flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--color-primary);"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Chronological Drift timeline history
+          </h3>
+          <button class="btn btn-secondary btn-sm" id="btn-refresh-timeline">Refresh history logs</button>
+        </div>
+
+        <div class="drift-timeline-thread" id="timeline-events-container">
+          <!-- Programmatically rendered nodes -->
+          <div class="table-empty">Loading drift events thread...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/drift_explorer.js"></script>
+</body>
+</html>

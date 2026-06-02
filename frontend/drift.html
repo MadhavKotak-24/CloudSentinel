@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Drift Detection - Check for configuration differences between Terraform templates and live cloud infrastructure.">
+  <title>CloudSentinel — Drift Detection</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <style>
+    /* Additional editor styling helper */
+    .drift-json-editor {
+      min-height: 280px !important;
+      font-size: var(--text-xs) !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Configuration Drift Detection</h1>
+          <p class="page-subtitle">Compare declared Infrastructure-as-Code state with deployed cloud configurations in real-time</p>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Editors -->
+      <div class="drift-editor-container animate-fade-in-up stagger-1">
+        <!-- Expected (Terraform) -->
+        <div class="drift-editor">
+          <div class="drift-editor-header">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary);"></span>
+              Expected State (Terraform / Declared IaC)
+            </span>
+            <button class="btn btn-ghost btn-sm" id="btn-load-sample-tf" style="padding: 2px 8px; font-size: 11px;">Load Sample</button>
+          </div>
+          <textarea id="drift-expected-json" class="drift-json-editor" placeholder="Paste your target Terraform state JSON here..."></textarea>
+        </div>
+
+        <!-- Actual (AWS Cloud) -->
+        <div class="drift-editor">
+          <div class="drift-editor-header">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-warning);"></span>
+              Actual State (Live AWS Environment)
+            </span>
+            <button class="btn btn-ghost btn-sm" id="btn-load-sample-aws" style="padding: 2px 8px; font-size: 11px;">Load Sample</button>
+          </div>
+          <textarea id="drift-actual-json" class="drift-json-editor" placeholder="Paste actual AWS configuration JSON here..."></textarea>
+        </div>
+      </div>
+
+      <!-- Run Drift Button -->
+      <div class="drift-controls animate-fade-in-up stagger-2">
+        <button class="btn btn-primary" id="btn-run-drift" style="padding: var(--space-3) var(--space-8); display: inline-flex; align-items: center; gap: 8px; font-weight: var(--weight-semibold); border-radius: var(--radius-lg); box-shadow: 0 0 15px var(--color-primary-glow);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Compare Configuration State
+        </button>
+      </div>
+
+      <!-- Drift Results Details -->
+      <div class="table-container animate-fade-in-up stagger-3" id="drift-results-card" style="display: none; margin-bottom: var(--space-6);">
+        <div class="table-header">
+          <h3 class="table-title flex items-center gap-2" style="color: var(--color-critical);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Active Configuration Drifts Detected
+          </h3>
+          <span class="badge badge-critical" id="drift-results-badge">0 Drifts</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Resource</th>
+              <th>Expected Value</th>
+              <th>Actual Value</th>
+              <th>Difference Status</th>
+            </tr>
+          </thead>
+          <tbody id="drift-results-tbody">
+            <!-- Populated via Javascript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Drift History Timeline -->
+      <div class="table-container animate-fade-in-up stagger-4">
+        <div class="table-header">
+          <h3 class="table-title">Drift Event Audits & Timeline</h3>
+          <button class="btn btn-secondary btn-sm" id="btn-refresh-drift-history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right: 4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            Refresh Log
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Resource</th>
+              <th>Expected State</th>
+              <th>Actual State</th>
+            </tr>
+          </thead>
+          <tbody id="drift-history-tbody">
+            <tr><td colspan="4" class="table-empty">Loading drift event timeline...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/drift.js"></script>
+</body>
+</html>

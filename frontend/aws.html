@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel AWS Security Scanner - Continuous security scanning of AWS services including S3, EC2 Security Groups, and IAM configurations.">
+  <title>CloudSentinel — AWS Security</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">AWS Cloud Security</h1>
+          <p class="page-subtitle">Real-time configuration auditing for AWS S3, EC2 Security Groups, and IAM credentials</p>
+        </div>
+        <div class="page-header-actions">
+          <span class="status-dot offline" id="aws-connection-status">AWS Client Disconnected</span>
+        </div>
+      </div>
+
+      <!-- Action & Profile Card -->
+      <div class="dashboard-stats" style="margin-bottom: var(--space-6); grid-template-columns: 2fr 1fr;">
+        <div class="stat-card primary animate-fade-in-up stagger-1" style="height: auto; display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-5);">
+          <div>
+            <h3 style="font-size: var(--text-lg); font-weight: var(--weight-bold); margin-bottom: var(--space-2);">AWS Live Assessment</h3>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--leading-relaxed); margin-bottom: var(--space-4);">
+              Run a live configuration scan on your configured AWS infrastructure. This queries AWS resource metadata directly via the Boto3 SDK API using local instance profiles or configuration variables.
+            </p>
+          </div>
+          <div class="flex items-center gap-4">
+            <button class="btn btn-primary" id="btn-trigger-aws-scan" style="padding: var(--space-3) var(--space-6); font-weight: var(--weight-semibold); border-radius: var(--radius-md); box-shadow: 0 0 12px var(--color-primary-glow);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Trigger Cloud Audit
+            </button>
+            <span id="aws-scan-loader" style="display: none; color: var(--text-tertiary); font-size: var(--text-xs); font-family: var(--font-mono);">
+              Scanning cloud services...
+            </span>
+          </div>
+        </div>
+
+        <div class="stat-card success animate-fade-in-up stagger-2" style="height: auto; padding: var(--space-5);">
+          <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-3);">Active AWS Profile</h3>
+          <div class="flex flex-col gap-2 font-mono" style="font-size: var(--text-xs); color: var(--text-secondary);">
+            <div class="flex justify-between" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-2);">
+              <span>Region:</span>
+              <span style="color: var(--text-primary);" id="aws-profile-region">us-east-1</span>
+            </div>
+            <div class="flex justify-between" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-2);">
+              <span>IAM Auth:</span>
+              <span style="color: var(--color-success);" id="aws-profile-auth">Boto3 Config</span>
+            </div>
+            <div class="flex justify-between">
+              <span>SDK Status:</span>
+              <span style="color: var(--text-primary);">Configured</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Compliance Cards -->
+      <div class="compliance-summary animate-fade-in-up stagger-2" style="margin-bottom: var(--space-6);">
+        <div class="compliance-summary-item">
+          <div class="compliance-summary-value" id="count-s3-findings" style="color: var(--color-primary);">—</div>
+          <div class="compliance-summary-label">Amazon S3 Issues</div>
+        </div>
+        <div class="compliance-summary-item">
+          <div class="compliance-summary-value" id="count-sg-findings" style="color: var(--color-high);">—</div>
+          <div class="compliance-summary-label">EC2 Security Group Issues</div>
+        </div>
+        <div class="compliance-summary-item">
+          <div class="compliance-summary-value" id="count-iam-findings" style="color: var(--color-critical);">—</div>
+          <div class="compliance-summary-label">IAM User & Policy Issues</div>
+        </div>
+      </div>
+
+      <!-- Main Panel: Results & Chart -->
+      <div class="dashboard-charts" style="margin-bottom: var(--space-6);">
+        <!-- AWS Severity Doughnut -->
+        <div class="chart-card animate-fade-in-up stagger-3">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">AWS Finding Severities</h3>
+            <span class="badge badge-info" id="aws-chart-badge">No Scans</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="aws-severity-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Simulated Data Notice & Demo Mode Toggle -->
+        <div class="chart-card animate-fade-in-up stagger-3" style="display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-5);">
+          <div>
+            <div class="chart-card-header" style="margin-bottom: var(--space-2);">
+              <h3 class="chart-card-title flex items-center gap-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: var(--color-warning);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                AWS Integration Sandbox
+              </h3>
+            </div>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--leading-relaxed); margin-bottom: var(--space-4);">
+              If your AWS Boto3 local developer credentials are not configured or if you are running in a sandbox with no AWS resources, CloudSentinel will default to simulated high-fidelity demo mode. This displays a gorgeous set of interactive security violations representing actual scan output.
+            </p>
+          </div>
+          <div class="flex items-center justify-between" style="border-top: 1px solid var(--border-default); padding-top: var(--space-4);">
+            <span style="font-size: var(--text-xs); color: var(--text-tertiary);">Interactive Sandbox Mode</span>
+            <button class="btn btn-secondary btn-sm" id="btn-toggle-sandbox">Toggle Live / Demo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AWS Scan Findings Table -->
+      <div class="table-container animate-fade-in-up stagger-4">
+        <div class="table-header">
+          <h3 class="table-title">Cloud Resource Security Findings</h3>
+          <span class="badge badge-info" id="aws-findings-total">0 Alerts</span>
+        </div>
+        
+        <div class="aws-results-grid" id="aws-findings-container" style="padding: var(--space-5);">
+          <div class="table-empty" style="grid-column: 1 / -1;">No AWS scans have been run yet. Run a live cloud audit to analyze configurations!</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/aws.js"></script>
+</body>
+</html>

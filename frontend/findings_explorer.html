@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Findings Explorer - Interactive threat-hunting console for security analysts to search, filter, and remediate cloud misconfigurations and vulnerabilities.">
+  <title>CloudSentinel — Findings Explorer</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <!-- Page Header -->
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Findings Threat Explorer</h1>
+          <p class="page-subtitle">Interactive query console and playbook trigger for active cloud security alerts</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-export-json">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export JSON
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Advanced 4-Way Filters Hunter Panel -->
+      <div class="table-container animate-fade-in-up stagger-1" style="padding: var(--space-5); margin-bottom: var(--space-5);">
+        <div class="flex flex-col gap-4">
+          <!-- First Row: Search & Source & Sorting -->
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="search-wrapper flex-grow" style="max-width: 480px; width: 100%;">
+              <input type="text" id="hunter-search" class="form-input" placeholder="Search by CVE code, Resource name, or ID tag... (Ctrl+K)">
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Detection Source Dropdown -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <select id="filter-source" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 150px;">
+                  <option value="ALL">All Sources</option>
+                  <option value="AWS">AWS Cloud Scan</option>
+                  <option value="Checkov">Checkov IaC</option>
+                  <option value="Trivy">Trivy Container</option>
+                  <option value="Infrastructure">Infrastructure Scan</option>
+                </select>
+              </div>
+
+              <!-- Time Horizon Dropdown -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <select id="filter-time" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 150px;">
+                  <option value="ALL">All Detection Times</option>
+                  <option value="TODAY">Detected Today</option>
+                  <option value="WEEK">Last 7 Days</option>
+                  <option value="MONTH">Last 30 Days</option>
+                </select>
+              </div>
+
+              <!-- Sorting Dropdown -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <select id="hunter-sort" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 180px;">
+                  <option value="score-desc">Risk Index: High to Low</option>
+                  <option value="score-asc">Risk Index: Low to High</option>
+                  <option value="time-desc">Time: Newest to Oldest</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Second Row: Interactive Severity Badges Toggles -->
+          <div class="flex items-center gap-3" style="border-top: 1px solid var(--border-default); padding-top: var(--space-3);">
+            <span style="font-size: var(--text-xs); font-weight: var(--weight-bold); color: var(--text-tertiary); text-transform: uppercase; margin-right: var(--space-2);">Filter Severity:</span>
+            <button class="filter-badge-toggle active" data-severity="ALL">All</button>
+            <button class="filter-badge-toggle" data-severity="CRITICAL" style="--color-primary: var(--color-critical); --color-primary-light: var(--color-critical-light); --color-primary-glow: rgba(239, 68, 68, 0.4);">Critical</button>
+            <button class="filter-badge-toggle" data-severity="HIGH" style="--color-primary: var(--color-high); --color-primary-light: var(--color-high-light); --color-primary-glow: rgba(249, 115, 22, 0.4);">High</button>
+            <button class="filter-badge-toggle" data-severity="MEDIUM" style="--color-primary: var(--color-warning); --color-primary-light: var(--color-warning-light); --color-primary-glow: rgba(245, 158, 11, 0.4);">Medium</button>
+            <button class="filter-badge-toggle" data-severity="LOW" style="--color-primary: var(--color-success); --color-primary-light: var(--color-success-light); --color-primary-glow: rgba(16, 185, 129, 0.4);">Low</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- High-Density Analyst Cards Grid -->
+      <div class="table-container" style="border: none; background: transparent; padding: 0; box-shadow: none;">
+        <div class="flex items-center justify-between" style="margin-bottom: var(--space-4);">
+          <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-primary);" id="lbl-total-alerts">Hunting Cards Log</h3>
+          <span class="badge badge-info" id="badge-alerts-tally">0 Scanned Checks</span>
+        </div>
+
+        <div class="findings-explorer-grid animate-fade-in-up stagger-2" id="explorer-cards-grid">
+          <!-- Populated via Javascript -->
+        </div>
+
+        <!-- Float Pagination Controls -->
+        <div class="table-container animate-fade-in-up stagger-3" style="margin-top: var(--space-6); padding: var(--space-4) var(--space-5);">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-secondary" id="page-count-info">
+              Showing 0 to 0 of 0 hunting alerts
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="btn btn-secondary btn-sm" id="btn-prev" disabled>Previous</button>
+              <button class="btn btn-secondary btn-sm" id="btn-next" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Lateral Slide-out Analyst Drawer -->
+  <div class="drawer-backdrop" id="drawer-overlay"></div>
+  <aside class="analyst-drawer" id="threat-drawer">
+    <div class="analyst-drawer-header">
+      <div>
+        <span class="badge badge-info" style="font-size: 10px; margin-bottom: var(--space-2);" id="drawer-source-badge">Trivy Image Scan</span>
+        <h3 style="font-size: var(--text-lg); font-weight: var(--weight-bold); line-height: var(--leading-tight);" id="drawer-alert-title">SOCKS5 heap buffer overflow</h3>
+      </div>
+      <button class="analyst-drawer-close" id="btn-close-drawer">&times;</button>
+    </div>
+
+    <!-- Alert details body -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: var(--space-5);">
+      <!-- Severity & Score -->
+      <div class="flex items-center gap-3">
+        <span id="drawer-severity-badge"></span>
+        <span class="badge badge-info" id="drawer-risk-score">Risk Index: 8.5</span>
+      </div>
+
+      <!-- Resource Block -->
+      <div>
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);">Audited Resource Tag</h4>
+        <code id="drawer-resource-name" style="display: block; padding: var(--space-3); background: var(--bg-body); border-radius: var(--radius-md); border: 1px solid var(--border-default); font-family: var(--font-mono); font-size: var(--text-sm); word-break: break-all;">—</code>
+      </div>
+
+      <!-- Time Stamp -->
+      <div>
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);">Log Timestamp</h4>
+        <div id="drawer-time-stamp" style="font-size: var(--text-sm); color: var(--text-primary); font-family: var(--font-mono);">—</div>
+      </div>
+
+      <!-- Description Block -->
+      <div>
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);">Vulnerability Details</h4>
+        <p id="drawer-alert-desc" style="font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--text-primary);">—</p>
+      </div>
+
+      <!-- Playbook Remediation Script Block -->
+      <div style="flex-grow: 1;">
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);">SOC Remediation Playbook</h4>
+        <div id="drawer-remediation-instructions" class="aws-finding-remediation" style="font-size: var(--text-xs); line-height: var(--leading-relaxed); padding: var(--space-4); border-left-color: var(--color-success);">
+          —
+        </div>
+      </div>
+
+      <!-- Footer Action -->
+      <div class="flex gap-4" style="border-top: 1px solid var(--border-default); padding-top: var(--space-4); margin-top: var(--space-4);">
+        <button class="btn btn-primary flex-1" id="btn-drawer-execute-playbook" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Execute Playbook Mitigation
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/findings_explorer.js"></script>
+</body>
+</html>

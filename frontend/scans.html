@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Scans - Trigger new security compliance scans and view historical scan reports.">
+  <title>CloudSentinel — Scans</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Security Scans</h1>
+          <p class="page-subtitle">Initiate manual audits or browse history of scheduled compliance assessments</p>
+        </div>
+      </div>
+
+      <div class="dashboard-charts" style="margin-bottom: var(--space-6); grid-template-columns: 1fr;">
+        <!-- New Scan Trigger Card -->
+        <div class="chart-card animate-fade-in-up stagger-1" style="height: auto;">
+          <div class="chart-card-header" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-3); margin-bottom: var(--space-4);">
+            <h3 class="chart-card-title flex items-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--color-primary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              Start New Security Scan
+            </h3>
+          </div>
+          
+          <form id="new-scan-form" class="flex flex-wrap gap-4 items-end">
+            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+              <label class="form-label" for="scan-type-select">Scan Target / Source</label>
+              <select id="scan-type-select" class="form-input">
+                <option value="code">Infrastructure as Code (Generic IAAC Scan)</option>
+                <option value="aws">AWS Active Cloud Scan</option>
+                <option value="docker">Docker Image Vulnerability Scan</option>
+              </select>
+            </div>
+            
+            <div class="form-group" id="scan-param-container" style="flex: 2; min-width: 300px; margin-bottom: 0;">
+              <label class="form-label" id="scan-param-label" for="scan-param-input">Project Code / Path</label>
+              <input type="text" id="scan-param-input" class="form-input" placeholder="e.g. AWS credentials or directory endpoint...">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="start-scan-btn" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Launch Scan</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Direct IaC Paste Sandbox (Requirement 9) -->
+      <div class="chart-card animate-fade-in-up stagger-2" style="height: auto; margin-bottom: var(--space-6);">
+        <div class="chart-card-header" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-3); margin-bottom: var(--space-4);">
+          <h3 class="chart-card-title flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--color-success);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            IaC Paste Scanner (Direct Configuration Analysis)
+          </h3>
+        </div>
+        
+        <form id="direct-scan-form" class="flex flex-col gap-4">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="direct-scan-content">Paste Terraform, Kubernetes YAML, or Config File Contents</label>
+            <textarea id="direct-scan-content" class="form-textarea" placeholder='resource "aws_security_group" "allow_all" {
+  name = "allow_all"
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+  }
+}' style="min-height: 180px;"></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-success" id="direct-scan-btn" style="align-self: flex-start; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Analyze Configuration Content</span>
+          </button>
+        </form>
+
+        <!-- Direct Analysis Results -->
+        <div id="direct-scan-results" class="hidden" style="margin-top: var(--space-6);">
+          <h4 style="font-size: var(--text-sm); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-primary); margin-bottom: var(--space-3);" id="direct-scan-findings-header">Scan Findings</h4>
+          
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Resource</th>
+                  <th>Description</th>
+                  <th>Risk Score</th>
+                  <th>Remediation Suggestion</th>
+                </tr>
+              </thead>
+              <tbody id="direct-scan-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scan History Table -->
+      <div class="table-container animate-fade-in-up stagger-3">
+        <div class="table-header">
+          <h3 class="table-title">Scan Log & Audit History</h3>
+          <button class="btn btn-secondary btn-sm" id="btn-refresh-history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right: 4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            Refresh Log
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Scan ID</th>
+              <th>Date & Time</th>
+              <th>Target Type</th>
+              <th>Status</th>
+              <th>Findings Count</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="scans-tbody">
+            <tr><td colspan="6" class="table-empty">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scan Report Modal -->
+  <div class="modal-overlay" id="scan-report-modal">
+    <div class="modal" style="max-width: 800px; width: 100%;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="report-modal-title">Scan Execution Report</h3>
+        <button class="modal-close" id="report-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="dashboard-stats" style="margin-bottom: var(--space-5); grid-template-columns: repeat(3, 1fr);">
+          <div class="stat-card primary" style="padding: var(--space-4);">
+            <div class="stat-card-label">Scan Target</div>
+            <div class="stat-card-value" id="report-target" style="font-size: var(--text-lg); margin-top: 4px; word-break: break-all;">—</div>
+          </div>
+          <div class="stat-card warning" style="padding: var(--space-4);">
+            <div class="stat-card-label">Total Findings</div>
+            <div class="stat-card-value" id="report-findings-count" style="font-size: var(--text-2xl); margin-top: 4px;">—</div>
+          </div>
+          <div class="stat-card success" style="padding: var(--space-4);">
+            <div class="stat-card-label">Execution Time</div>
+            <div class="stat-card-value" id="report-time" style="font-size: var(--text-lg); margin-top: 4px;">—</div>
+          </div>
+        </div>
+
+        <h4 style="font-size: var(--text-sm); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);">Scanner Execution Log (Raw JSON Output)</h4>
+        <pre class="scan-result-json" id="report-raw-json">Loading...</pre>
+
+        <div class="flex gap-4" style="margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-default);">
+          <button class="btn btn-secondary btn-sm" id="report-download-btn">Download Raw JSON</button>
+          <button class="btn btn-primary btn-sm flex-grow-1" id="report-dismiss-btn">Dismiss Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/scans.js"></script>
+</body>
+</html>

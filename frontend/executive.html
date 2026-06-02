@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Executive Security Dashboard - High level summary of risk, compliance posture, scans activity, and operational incidents.">
+  <title>CloudSentinel — Executive Security Dashboard</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <!-- Page Header -->
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Executive SOC Dashboard</h1>
+          <p class="page-subtitle">Platform risk indicators, operational security trends, and compliance posture summaries</p>
+        </div>
+        <div class="page-header-actions">
+          <span class="status-dot online">SOC Engine Online</span>
+        </div>
+      </div>
+
+      <!-- 8 Premium KPI Cards Row -->
+      <div class="dashboard-stats" style="grid-template-columns: repeat(4, 1fr); margin-bottom: var(--space-6);">
+        <!-- Total Security Scans -->
+        <div class="stat-card primary animate-fade-in-up stagger-1">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Total Security Scans</div>
+              <div class="stat-card-value" id="stat-scans">0</div>
+            </div>
+            <div class="stat-card-icon primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+          </div>
+          <span class="stat-card-change up">↑ Continuous Audits</span>
+        </div>
+
+        <!-- Total Findings -->
+        <div class="stat-card warning animate-fade-in-up stagger-2">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Total Findings</div>
+              <div class="stat-card-value" id="stat-findings">0</div>
+            </div>
+            <div class="stat-card-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+          </div>
+          <span class="stat-card-change down">↓ Resolved Items: 42</span>
+        </div>
+
+        <!-- Critical Findings (Pulsing Glow) -->
+        <div class="stat-card critical pulsing-alert-glow animate-fade-in-up stagger-3">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label" style="color: var(--color-critical); font-weight: var(--weight-bold);">Critical Findings</div>
+              <div class="stat-card-value" id="stat-critical-findings">0</div>
+            </div>
+            <div class="stat-card-icon critical">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </div>
+          </div>
+          <span class="stat-card-change down">⚠️ Action Required</span>
+        </div>
+
+        <!-- Drift Events -->
+        <div class="stat-card warning animate-fade-in-up stagger-4">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Drift Events</div>
+              <div class="stat-card-value" id="stat-drift-events">0</div>
+            </div>
+            <div class="stat-card-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+          </div>
+          <span class="stat-card-change" id="drift-trend-label">Auto-detected drift logs</span>
+        </div>
+
+        <!-- AWS Resources Monitored -->
+        <div class="stat-card success animate-fade-in-up stagger-1">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">AWS Resources Monitored</div>
+              <div class="stat-card-value" id="stat-monitored-resources">0</div>
+            </div>
+            <div class="stat-card-icon success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+            </div>
+          </div>
+          <span class="stat-card-change up">↑ Assets Covered</span>
+        </div>
+
+        <!-- Security Score (Radial score indicator) -->
+        <div class="stat-card primary animate-fade-in-up stagger-2">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Security Score</div>
+              <div class="executive-score-container">
+                <div class="score-radial-progress" id="radial-security-score" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100" aria-label="Security Posture Score">—</div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.2;">
+                  Risk posture index
+                </div>
+              </div>
+            </div>
+            <div class="stat-card-icon primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance Score (Radial score indicator) -->
+        <div class="stat-card success animate-fade-in-up stagger-3">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Compliance Score</div>
+              <div class="executive-score-container">
+                <div class="score-radial-progress" id="radial-compliance-score" style="--score-color: var(--color-success);" role="progressbar" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100" aria-label="AWS Compliance Score">—</div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.2;">
+                  Standards passing
+                </div>
+              </div>
+            </div>
+            <div class="stat-card-icon success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Incidents -->
+        <div class="stat-card critical animate-fade-in-up stagger-4">
+          <div class="stat-card-header">
+            <div>
+              <div class="stat-card-label">Open Incidents</div>
+              <div class="stat-card-value" id="stat-open-incidents">0</div>
+            </div>
+            <div class="stat-card-icon critical">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+          </div>
+          <span class="stat-card-change down">🚨 Unmitigated Alerts</span>
+        </div>
+      </div>
+
+      <!-- Charts Section Rows -->
+      <!-- Row 1: Risk Trend Line Chart & Findings By Severity Pie Chart -->
+      <div class="dashboard-charts animate-fade-in-up stagger-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title flex items-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              Executive Risk Score Trend (Last 12 Weeks)
+            </h3>
+            <span class="badge badge-info">Moving Average</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="executive-risk-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title flex items-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
+              Vulnerability Violations by Severity
+            </h3>
+            <span class="badge badge-critical">Active Risk</span>
+          </div>
+          <div class="chart-wrapper" style="position: relative; max-width: 320px; margin: 0 auto;">
+            <canvas id="executive-severity-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: AWS Resource Distribution & Weekly Scan Activity & Compliance Status Chart -->
+      <div class="chart-grid-three animate-fade-in-up stagger-3">
+        <!-- AWS Resource Distribution Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">AWS Resource Compliance Tally</h3>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="executive-resource-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Weekly Scan Activity Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Weekly Operational Audits</h3>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="executive-activity-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Compliance Status Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Standards Coverage Rate</h3>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="executive-compliance-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOC Sandbox Simulation Control Panel -->
+      <div class="metric-control-panel animate-fade-in-up stagger-4">
+        <h3 style="font-size: var(--text-md); font-weight: var(--weight-bold); border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-2); margin-bottom: var(--space-3);" class="flex items-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: var(--color-primary);"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          Executive SOC Simulation & Control Sandbox
+        </h3>
+        <p style="color: var(--text-secondary); font-size: var(--text-xs); line-height: var(--leading-relaxed);">
+          Adjust the sliders below to dynamically scale CloudSentinel metrics in real-time. Notice the counters animate, scores compute, severity doughnut allocations re-weight, and risk index charts draw dynamically.
+        </p>
+        
+        <div class="control-sliders-grid">
+          <div class="slider-group">
+            <label for="slide-scans">Scans: <span id="lbl-slide-scans">148</span></label>
+            <input type="range" id="slide-scans" min="10" max="500" value="148">
+          </div>
+          <div class="slider-group">
+            <label for="slide-findings">Findings: <span id="lbl-slide-findings">34</span></label>
+            <input type="range" id="slide-findings" min="5" max="200" value="34">
+          </div>
+          <div class="slider-group">
+            <label for="slide-critical">Critical Alerts: <span id="lbl-slide-critical">3</span></label>
+            <input type="range" id="slide-critical" min="0" max="25" value="3">
+          </div>
+          <div class="slider-group">
+            <label for="slide-drift">Drift Events: <span id="lbl-slide-drift">12</span></label>
+            <input type="range" id="slide-drift" min="0" max="50" value="12">
+          </div>
+          <div class="slider-group">
+            <label for="slide-resources">AWS Assets: <span id="lbl-slide-resources">840</span></label>
+            <input type="range" id="slide-resources" min="50" max="2500" value="840">
+          </div>
+          <div class="slider-group">
+            <label for="slide-score-security">Security Score: <span id="lbl-slide-score-security">85%</span></label>
+            <input type="range" id="slide-score-security" min="10" max="100" value="85">
+          </div>
+          <div class="slider-group">
+            <label for="slide-score-compliance">Compliance Score: <span id="lbl-slide-score-compliance">92%</span></label>
+            <input type="range" id="slide-score-compliance" min="10" max="100" value="92">
+          </div>
+          <div class="slider-group">
+            <label for="slide-incidents">Open Incidents: <span id="lbl-slide-incidents">4</span></label>
+            <input type="range" id="slide-incidents" min="0" max="15" value="4">
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Findings Table -->
+      <div class="table-container animate-fade-in-up stagger-4">
+        <div class="table-header">
+          <h3 class="table-title">Recent Critical Disclosures</h3>
+          <a href="findings.html" class="btn btn-ghost btn-sm">Manage Logs →</a>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Resource ID</th>
+              <th>Vulnerability Description</th>
+              <th>Risk Index</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recent-findings-tbody">
+            <!-- Programmatically rendered -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/executive.js"></script>
+</body>
+</html>

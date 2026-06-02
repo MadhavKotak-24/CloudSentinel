@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Compliance - Audit Terraform configurations with Checkov and scan Docker images for vulnerabilities with Trivy.">
+  <title>CloudSentinel — Compliance Security</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <style>
+    /* Tabs & Dropzone helpers */
+    .compliance-tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border-default);
+      margin-bottom: var(--space-6);
+      gap: var(--space-4);
+    }
+    .compliance-tab {
+      padding: var(--space-3) var(--space-5);
+      cursor: pointer;
+      color: var(--text-tertiary);
+      font-weight: var(--weight-medium);
+      font-size: var(--text-md);
+      position: relative;
+      transition: all var(--transition-fast);
+    }
+    .compliance-tab:hover {
+      color: var(--text-primary);
+    }
+    .compliance-tab.active {
+      color: var(--color-primary);
+    }
+    .compliance-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-primary);
+      box-shadow: 0 0 8px var(--color-primary-glow);
+    }
+    .dropzone {
+      border: 2px dashed var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8) var(--space-6);
+      text-align: center;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+    .dropzone-icon {
+      color: var(--text-tertiary);
+      width: 48px;
+      height: 48px;
+    }
+    .dropzone:hover .dropzone-icon {
+      color: var(--color-primary);
+      transform: translateY(-2px);
+      transition: transform var(--transition-normal);
+    }
+    .compliance-section {
+      display: none;
+    }
+    .compliance-section.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Compliance & Supply Chain Audits</h1>
+          <p class="page-subtitle">Scan infrastructure code using Checkov policies and evaluate container vulnerabilities using Trivy</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="compliance-tab-nav animate-fade-in-up stagger-1">
+        <div class="compliance-tab active" data-tab="checkov">Checkov (IaC Static Code Analysis)</div>
+        <div class="compliance-tab" data-tab="trivy">Trivy (Container Image Vulnerabilities)</div>
+      </div>
+
+      <!-- ================= CHECKOV SECTION ================= -->
+      <section class="compliance-section active" id="sec-checkov">
+        <div class="dashboard-charts" style="grid-template-columns: 2fr 1fr; margin-bottom: var(--space-6);">
+          <!-- Dropzone Uploader -->
+          <div class="chart-card animate-fade-in-up stagger-2" style="height: auto; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-3);">Upload Terraform Template File</h3>
+              <div class="dropzone" id="tf-dropzone">
+                <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <div style="font-weight: var(--weight-semibold);" id="dropzone-text">Drag and drop your .tf file here, or click to browse</div>
+                <div style="font-size: var(--text-xs); color: var(--text-tertiary);">Supports only valid Terraform configurations (.tf extension)</div>
+                <input type="file" id="tf-file-input" style="display: none;" accept=".tf">
+              </div>
+            </div>
+            <div class="flex items-center justify-between" style="margin-top: var(--space-4); border-top: 1px solid var(--border-default); padding-top: var(--space-4);">
+              <span id="selected-file-name" style="font-size: var(--text-xs); color: var(--text-tertiary); font-family: var(--font-mono);">No file selected</span>
+              <button class="btn btn-primary btn-sm" id="btn-run-checkov" disabled>Run IaC Audit</button>
+            </div>
+          </div>
+
+          <!-- Info Card -->
+          <div class="chart-card animate-fade-in-up stagger-2" style="height: auto; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-2);">What is Checkov?</h3>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--leading-relaxed); margin-bottom: var(--space-3);">
+                Checkov is a static code analysis tool for Infrastructure-as-Code (IaC). It scans configurations to identify security and compliance misconfigurations across clouds (AWS, GCP, Azure, etc.) according to CIS guidelines and standards.
+              </p>
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--text-tertiary); border-top: 1px solid var(--border-default); padding-top: var(--space-3);">
+              Integrated Sandbox Mode active for missing packages
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkov Results Dashboard -->
+        <div id="checkov-dashboard" style="display: none;" class="animate-fade-in-up">
+          <!-- Summary Cards -->
+          <div class="compliance-summary" style="margin-bottom: var(--space-6);">
+            <div class="compliance-summary-item">
+              <div class="compliance-summary-value" id="ck-total-checks" style="color: var(--text-primary);">0</div>
+              <div class="compliance-summary-label">Total Audited Policies</div>
+            </div>
+            <div class="compliance-summary-item">
+              <div class="compliance-summary-value" id="ck-passed-checks" style="color: var(--color-success);">0</div>
+              <div class="compliance-summary-label">Passed Policies</div>
+            </div>
+            <div class="compliance-summary-item">
+              <div class="compliance-summary-value" id="ck-failed-checks" style="color: var(--color-critical);">0</div>
+              <div class="compliance-summary-label">Failed Policies</div>
+            </div>
+            <div class="compliance-summary-item">
+              <div class="compliance-summary-value" id="ck-compliance-rate" style="color: var(--color-primary);">0%</div>
+              <div class="compliance-summary-label">Compliance Rate</div>
+            </div>
+          </div>
+
+          <!-- Checkov Table -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 class="table-title">Static Analysis Results</h3>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" id="btn-ck-filter-all" style="background: var(--bg-body);">All Checks</button>
+                <button class="btn btn-secondary btn-sm" id="btn-ck-filter-failed">Failed Only</button>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Check ID</th>
+                  <th>Resource</th>
+                  <th>Failed Attribute / Description</th>
+                </tr>
+              </thead>
+              <tbody id="checkov-tbody">
+                <!-- Javascript populates -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TRIVY SECTION ================= -->
+      <section class="compliance-section" id="sec-trivy">
+        <div class="dashboard-charts" style="grid-template-columns: 2fr 1fr; margin-bottom: var(--space-6);">
+          <!-- Image form -->
+          <div class="chart-card animate-fade-in-up" style="height: auto; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-3);">Docker Container Security Audit</h3>
+              <div class="form-group">
+                <label class="form-label" for="trivy-image-input">Docker Image Identifier</label>
+                <input type="text" id="trivy-image-input" class="form-input" placeholder="e.g. ubuntu:latest or nginx:alpine or node:18" value="ubuntu:latest">
+                <div style="font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 4px;">Target images must be available in public registries or local Docker instances.</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between" style="border-top: 1px solid var(--border-default); padding-top: var(--space-4); margin-top: var(--space-4);">
+              <span style="font-size: var(--text-xs); color: var(--text-tertiary); font-family: var(--font-mono);">Package Registry: DockerHub</span>
+              <button class="btn btn-primary btn-sm" id="btn-run-trivy" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                Audit Image
+              </button>
+            </div>
+          </div>
+
+          <!-- Info Card -->
+          <div class="chart-card animate-fade-in-up" style="height: auto; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-2);">What is Trivy?</h3>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--leading-relaxed); margin-bottom: var(--space-3);">
+                Trivy is a comprehensive security scanner for container images, Git repositories, and Kubernetes. It detects vulnerabilities (CVEs), secrets, and compliance violations with extreme speed and reliability.
+              </p>
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--text-tertiary); border-top: 1px solid var(--border-default); padding-top: var(--space-3);">
+              Integrated Sandbox Mode active for missing packages
+            </div>
+          </div>
+        </div>
+
+        <!-- Trivy Results Dashboard -->
+        <div id="trivy-dashboard" style="display: none;" class="animate-fade-in-up">
+          <div class="dashboard-stats" style="grid-template-columns: repeat(4, 1fr); margin-bottom: var(--space-6);">
+            <div class="stat-card primary" style="padding: var(--space-4);">
+              <div class="stat-card-label">Total Vulnerabilities</div>
+              <div class="stat-card-value" id="tr-total">—</div>
+            </div>
+            <div class="stat-card critical" style="padding: var(--space-4);">
+              <div class="stat-card-label">Critical Risks</div>
+              <div class="stat-card-value" id="tr-critical">—</div>
+            </div>
+            <div class="stat-card warning" style="padding: var(--space-4);">
+              <div class="stat-card-label">High Risks</div>
+              <div class="stat-card-value" id="tr-high">—</div>
+            </div>
+            <div class="stat-card success" style="padding: var(--space-4);">
+              <div class="stat-card-label">Medium & Low</div>
+              <div class="stat-card-value" id="tr-med-low">—</div>
+            </div>
+          </div>
+
+          <div class="dashboard-charts" style="margin-bottom: var(--space-6);">
+            <!-- Doughnut Chart -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <h3 class="chart-card-title">Vulnerability Severity Distribution</h3>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="trivy-severity-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Summary Table Details -->
+            <div class="chart-card" style="display: flex; flex-direction: column; justify-content: center; padding: var(--space-5);">
+              <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-3);">Image Assessment Summary</h3>
+              <div class="flex flex-col gap-3 font-mono" style="font-size: var(--text-sm); color: var(--text-secondary);">
+                <div class="flex justify-between" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-2);">
+                  <span>Target Image:</span>
+                  <span style="color: var(--text-primary);" id="tr-summary-image">—</span>
+                </div>
+                <div class="flex justify-between" style="border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-2);">
+                  <span>OS / Architecture:</span>
+                  <span style="color: var(--text-primary);">linux/amd64 (ubuntu 22.04)</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Audit Result:</span>
+                  <span style="color: var(--color-critical); font-weight: var(--weight-bold);">ATTENTION REQUIRED</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trivy Table -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3 class="table-title">Vulnerability Disclosures</h3>
+              <span class="badge badge-critical" id="trivy-cve-badge">0 Alerts</span>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Vulnerability ID</th>
+                  <th>Package Name</th>
+                  <th>Installed Version</th>
+                  <th>Remediation Fix</th>
+                </tr>
+              </thead>
+              <tbody id="trivy-tbody">
+                <!-- Javascript populates -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/compliance.js?v=1.0.2"></script>
+</body>
+</html>

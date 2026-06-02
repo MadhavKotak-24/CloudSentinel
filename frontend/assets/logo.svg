@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="shield-grad" x1="20" y1="10" x2="100" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="inner-grad" x1="40" y1="30" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#818CF8"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield shape -->
+  <path d="M60 8 L105 28 L105 60 C105 88 60 112 60 112 C60 112 15 88 15 60 L15 28 Z" fill="url(#shield-grad)" opacity="0.15" stroke="url(#shield-grad)" stroke-width="2"/>
+  <path d="M60 16 L98 33 L98 58 C98 82 60 104 60 104 C60 104 22 82 22 58 L22 33 Z" fill="url(#shield-grad)" opacity="0.08"/>
+  <!-- Cloud shape -->
+  <ellipse cx="60" cy="54" rx="24" ry="16" fill="url(#inner-grad)" opacity="0.9"/>
+  <ellipse cx="44" cy="58" rx="14" ry="12" fill="url(#inner-grad)" opacity="0.7"/>
+  <ellipse cx="76" cy="58" rx="14" ry="12" fill="url(#inner-grad)" opacity="0.7"/>
+  <rect x="36" y="56" width="48" height="14" rx="2" fill="url(#inner-grad)" opacity="0.8"/>
+  <!-- Check mark -->
+  <polyline points="48,58 56,66 74,48" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Scanning rings -->
+  <circle cx="60" cy="58" r="30" fill="none" stroke="url(#shield-grad)" stroke-width="1" opacity="0.3"/>
+  <circle cx="60" cy="58" r="38" fill="none" stroke="url(#shield-grad)" stroke-width="0.5" opacity="0.15"/>
+</svg>

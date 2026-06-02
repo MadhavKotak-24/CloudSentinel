@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudSentinel Reports - Compliance summaries, vulnerability logs archives, and executive PDF/JSON download vaults.">
+  <title>CloudSentinel — Reports Vault</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main-content">
+      <!-- Page Header -->
+      <div class="page-header animate-fade-in-up">
+        <div class="page-header-left">
+          <h1 class="page-title">Reports Document Vault</h1>
+          <p class="page-subtitle">Historical archive of security compliance, drift assessments, and active vulnerability reports</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary btn-sm" id="btn-generate-audit" style="display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px var(--color-primary-glow);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline></svg>
+            Generate Latest Audit
+          </button>
+        </div>
+      </div>
+
+      <!-- Unified Filters Hunter Panel -->
+      <div class="table-container animate-fade-in-up stagger-1" style="padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="search-wrapper flex-grow" style="max-width: 400px; width: 100%;">
+            <input type="text" id="reports-search" class="form-input" placeholder="Search by report name or scope... (Ctrl+K)">
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Report Type filter -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <select id="filter-type" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 160px;">
+                <option value="ALL">All Categories</option>
+                <option value="SCAN">Scan Reports</option>
+                <option value="AWS">AWS Audit Reports</option>
+                <option value="DRIFT">Drift Reports</option>
+                <option value="COMPLIANCE">Compliance Reports</option>
+              </select>
+            </div>
+
+            <!-- Date filter -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <select id="filter-date" class="form-input" style="padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3); min-width: 160px;">
+                <option value="ALL">All Time</option>
+                <option value="TODAY">Generated Today</option>
+                <option value="WEEK">Last 7 Days</option>
+                <option value="MONTH">Last 30 Days</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- High-Density Reports Cards Grid -->
+      <div class="table-container" style="border: none; background: transparent; padding: 0; box-shadow: none;">
+        <div class="flex items-center justify-between" style="margin-bottom: var(--space-4);">
+          <h3 style="font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-primary);">Document Archive</h3>
+          <span class="badge badge-info" id="badge-reports-total">0 Documents</span>
+        </div>
+
+        <div class="reports-grid animate-fade-in-up stagger-2" id="reports-cards-grid">
+          <!-- Populated via Javascript -->
+        </div>
+
+        <!-- Float Pagination Controls -->
+        <div class="table-container animate-fade-in-up stagger-3" style="margin-top: var(--space-6); padding: var(--space-4) var(--space-5);">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-secondary" id="page-count-info">
+              Showing 0 to 0 of 0 archived reports
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="btn btn-secondary btn-sm" id="btn-prev" disabled>Previous</button>
+              <button class="btn btn-secondary btn-sm" id="btn-next" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- PDF Download Simulator Overlay -->
+  <div class="report-progress-overlay animate-fade-in" id="download-progress-overlay" style="display: none;">
+    <div class="report-progress-card animate-zoom-in">
+      <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); color: var(--color-success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-3);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </div>
+      
+      <h3 style="font-size: var(--text-md); font-weight: var(--weight-bold); color: var(--text-primary);" id="progress-card-title">Compiling Audit Report PDF</h3>
+      <p style="color: var(--text-secondary); font-size: var(--text-xs); line-height: var(--leading-relaxed); margin-top: 4px;" id="progress-card-desc">Drawing charts, aggregating findings, and signing document checksums...</p>
+      
+      <div class="report-progress-bar-bg">
+        <div class="report-progress-bar-fill" id="download-bar-fill"></div>
+      </div>
+      
+      <span style="font-size: var(--text-xs); color: var(--text-tertiary); font-family: var(--font-mono);" id="download-progress-percent">0% Completed</span>
+    </div>
+  </div>
+
+  <!-- Scan Report Details Modal (Requirement 8) -->
+  <div class="modal-overlay" id="scan-report-modal">
+    <div class="modal" style="max-width: 800px; width: 100%;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="report-modal-title">Scan Compliance Report Details</h3>
+        <button class="modal-close" id="report-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="dashboard-stats" style="margin-bottom: var(--space-5); grid-template-columns: repeat(3, 1fr);">
+          <div class="stat-card primary" style="padding: var(--space-4);">
+            <div class="stat-card-label">Scan target type</div>
+            <div class="stat-card-value" id="report-target" style="font-size: var(--text-lg); margin-top: 4px; word-break: break-all;">—</div>
+          </div>
+          <div class="stat-card warning" style="padding: var(--space-4);">
+            <div class="stat-card-label">Total Findings Discovered</div>
+            <div class="stat-card-value" id="report-findings-count" style="font-size: var(--text-2xl); margin-top: 4px;">—</div>
+          </div>
+          <div class="stat-card success" style="padding: var(--space-4);">
+            <div class="stat-card-label">Execution Status</div>
+            <div class="stat-card-value" id="report-status" style="font-size: var(--text-lg); margin-top: 4px; color: var(--color-success);">—</div>
+          </div>
+        </div>
+
+        <!-- Severity Breakdown summary pills -->
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-3);">Severity Breakdown Summary</h4>
+        <div class="report-severity-pills" style="margin-bottom: var(--space-5);">
+          <div class="report-sev-pill crit" id="breakdown-crit" style="padding: var(--space-2) 0; font-size: var(--text-sm);">CRITICAL: 0</div>
+          <div class="report-sev-pill high" id="breakdown-high" style="padding: var(--space-2) 0; font-size: var(--text-sm);">HIGH: 0</div>
+          <div class="report-sev-pill med" id="breakdown-med" style="padding: var(--space-2) 0; font-size: var(--text-sm);">MEDIUM: 0</div>
+          <div class="report-sev-pill low" id="breakdown-low" style="padding: var(--space-2) 0; font-size: var(--text-sm);">LOW: 0</div>
+        </div>
+
+        <h4 style="font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-3);">Detailed Findings List</h4>
+        <div class="table-container" style="max-height: 250px; overflow-y: auto; margin-bottom: var(--space-5);">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Resource ID</th>
+                <th>Vulnerability Description</th>
+                <th>Risk Score</th>
+              </tr>
+            </thead>
+            <tbody id="report-findings-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex gap-4" style="margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-default);">
+          <button class="btn btn-secondary btn-sm" id="report-download-btn">Download Raw JSON</button>
+          <button class="btn btn-primary btn-sm flex-grow-1" id="report-dismiss-btn">Dismiss Report details</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/reports.js"></script>
+</body>
+</html>
