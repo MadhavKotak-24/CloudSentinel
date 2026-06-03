@@ -6,12 +6,12 @@
 
 const API = (() => {
   // CONFIGURATION: Set your live Render backend URL here (e.g. 'https://cloudsentinel-api.onrender.com')
-  const PRODUCTION_BACKEND_URL = ''; 
+  const PRODUCTION_BACKEND_URL = 'https://cloudsentinel-backend-45xj.onrender.com';
 
-  const BASE_URL = PRODUCTION_BACKEND_URL || 
-                   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                     ? 'http://localhost:5000'
-                     : `${window.location.protocol}//${window.location.hostname}:5000`);
+  const BASE_URL = PRODUCTION_BACKEND_URL ||
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000'
+      : `${window.location.protocol}//${window.location.hostname}:5000`);
   const REQUEST_TIMEOUT_MS = 15000; // 15s timeout
   let activeRequestsCount = 0;
 
@@ -72,7 +72,7 @@ const API = (() => {
     }
     loader.style.display = 'block';
     loader.style.opacity = '1';
-    
+
     // Animate to initial load state
     requestAnimationFrame(() => {
       if (loader) loader.style.width = '35%';
@@ -250,7 +250,7 @@ const API = (() => {
 window.apiGet = API.get;
 window.apiPost = API.post;
 window.apiUpload = API.upload;
-window.API_BASE_URL = PRODUCTION_BACKEND_URL || window.CLOUDSENTINEL_BACKEND_URL || 
-                      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                        ? 'http://localhost:5000'
-                        : `${window.location.protocol}//${window.location.hostname}:5000`);
+window.API_BASE_URL = PRODUCTION_BACKEND_URL || window.CLOUDSENTINEL_BACKEND_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : `${window.location.protocol}//${window.location.hostname}:5000`);
