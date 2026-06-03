@@ -10,7 +10,8 @@ def run_checkov(path):
             "-f",
             path,
             "--output",
-            "json"
+            "json",
+            "--skip-download"
         ]
         result=subprocess.run(
             cmd,
