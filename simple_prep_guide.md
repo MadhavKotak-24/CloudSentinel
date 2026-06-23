@@ -4,6 +4,22 @@ Use this simple, plain-English guide to prepare for your interview. It uses easy
 
 ---
 
+## 🚀 The Problem We Are Solving
+In modern cloud development, security is often treated as an afterthought:
+1. **Reactive Scanning**: Traditional security tools only audit cloud resources *after* they are already live. Catching a security mistake in production is dangerous and highly expensive to fix.
+2. **Data Privacy Risks**: Heavy enterprise security tools (like Wiz or Prisma Cloud) require you to share your private cloud keys and code files with their third-party cloud servers. For regulated industries (like banks or hospitals), this is a compliance violation.
+3. **High Scanning Costs**: Cloud providers charge fees per resource checked, leading to massive monthly bills just for security monitoring.
+
+---
+
+## 🌟 How CloudSentinel is Different from Native/Enterprise Tools
+* **Local-First (100% Privacy)**: Runs entirely inside your private machine or network. No access keys, passwords, or configuration files ever leave your boundary.
+* **"Shift-Left" Security**: Scans infrastructure code blueprints (`Terraform` templates) *before* anything is built in the cloud. It prevents security bugs rather than just reporting them.
+* **Zero Cost**: Uses powerful open-source scanners locally. You can scan thousands of templates and container registries for **$0**.
+* **Active Drift Reconciliation**: Instead of just alerting you that a cloud setting has drifted, it shows a side-by-side comparison of the expected vs. actual configuration and gives you a one-click command to fix it.
+
+---
+
 ## 1. What is CloudSentinel?
 Imagine you are building a secure house. Usually, security companies ask you to send them copies of all your door keys so they can monitor you from their central offices (this is how enterprise tools like Wiz or Datadog work). 
 
