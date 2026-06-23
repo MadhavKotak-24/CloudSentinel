@@ -18,6 +18,7 @@ from app.routes.trivy_routes import trivy_bp
 from app.routes.aws_routes import aws_bp
 from app.routes.drift_routes import drift_bp
 from app.routes.drift_history import history_bp
+from app.routes.kubernetes_routes import kubernetes_bp
 
 load_dotenv()
 
@@ -59,6 +60,7 @@ def create_app():
     app.register_blueprint(aws_bp,url_prefix="/aws")
     app.register_blueprint(drift_bp,url_prefix="/drift")
     app.register_blueprint(history_bp,url_prefix="/history")
+    app.register_blueprint(kubernetes_bp,url_prefix="/kubernetes")
     @app.route("/")
     def home():
         return jsonify({

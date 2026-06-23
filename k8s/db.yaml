@@ -1,0 +1,54 @@
+﻿apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudsentinel-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudsentinel-db
+  template:
+    metadata:
+      labels:
+        app: cloudsentinel-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16
+        env:
+        - name: POSTGRES_USER
+          value: sentineluser
+        - name: POSTGRES_PASSWORD
+          value: sentineluser123!!!
+        - name: POSTGRES_DB
+          value: cloudsentinel
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: cloudsentinel-db

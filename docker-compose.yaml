@@ -20,6 +20,20 @@ services:
       - db
 
 
+  frontend:
+
+    build:
+      context: ./frontend
+
+    container_name: cloudsentinel-frontend
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      - backend
+
+
   db:
 
     image: postgres:16

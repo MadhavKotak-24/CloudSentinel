@@ -131,6 +131,9 @@ const Dashboard = (() => {
     document.getElementById('action-aws')?.addEventListener('click', () => {
       window.location.href = 'aws.html';
     });
+    document.getElementById('action-k8s')?.addEventListener('click', () => {
+      window.location.href = 'kubernetes.html';
+    });
     document.getElementById('action-drift')?.addEventListener('click', () => {
       window.location.href = 'drift.html';
     });
