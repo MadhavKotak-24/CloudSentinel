@@ -84,8 +84,62 @@ Orchestration:
 
 ## Run Project
 
-```bash
-docker-compose up --build
+### 🐳 1. Running locally with Docker Compose (Fastest Setup)
+To build and spin up the frontend application, Flask backend, and PostgreSQL database locally using Docker Compose:
+1. Ensure your local `.env` configuration file exists in the root directory (this file is excluded from GitHub via `.gitignore` to protect credentials).
+2. Run the build and start command:
+   ```bash
+   docker-compose up --build
+   ```
+3. Open your browser to `http://localhost` (or `http://localhost:5000` for the backend).
+
+---
+
+### ☸️ 2. Running locally with Kubernetes (Kind)
+To spin up and run the application inside a local Kubernetes development cluster:
+1. Ensure Docker Desktop is active.
+2. Start the Kind node container:
+   ```bash
+   docker start cloudsentinel-control-plane
+   ```
+3. Side-load your locally built Docker images into the Kind cluster:
+   ```bash
+   kind load docker-image cloudsentinel-backend:latest
+   kind load docker-image cloudsentinel-frontend:latest
+   ```
+4. Expose the services by launching local port-forward tunnels in separate terminal windows:
+   - **Frontend UI (Port 9000)**:
+     ```bash
+     kubectl port-forward svc/frontend 9000:80 --address 0.0.0.0
+     ```
+   - **Backend API (Port 5000)**:
+     ```bash
+     kubectl port-forward svc/backend 5000:5000
+     ```
+5. Open your web browser to: `http://localhost:9000`
+
+---
+
+### 🐙 3. Deploying & Monitoring with GitOps (ArgoCD)
+To monitor cluster deployments and self-heal from configuration drift using GitOps:
+1. Ensure your Kind cluster is active and reachable via `kubectl`.
+2. **Access ArgoCD Dashboard**:
+   - Forward the server interface to your local port `8085`:
+     ```bash
+     kubectl port-forward svc/argocd-server -n argocd 8085:443 --address 127.0.0.1
+     ```
+   - Open your browser to: **`https://127.0.0.1:8085`** (bypass the HTTPS self-signed certificate warning).
+3. **Log in to ArgoCD**:
+   - **Username**: `admin`
+   - **Password**: The password is securely stored inside the local `.env` file under the key `ARGOCD_PASSWORD` (or can be dynamically retrieved using the command `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode`).
+4. **Link the Application**:
+   - Apply the application CRD:
+     ```bash
+     kubectl apply -f argocd-app.yaml
+     ```
+   - The application will automatically synchronize changes pushed to your GitHub repository and self-heal manual configurations in real-time.
+
+---
 
 
 ---
