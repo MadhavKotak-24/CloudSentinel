@@ -1,0 +1,166 @@
+name: CloudSentinel CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write # Required for requesting JWT via OIDC (aws-actions/configure-aws-credentials)
+  contents: read  # Required for checkout
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::123456789012:role/github-actions-eks-role # Placeholder for OIDC role
+  ECR_BACKEND_REPOSITORY: cloudsentinel-backend
+  ECR_FRONTEND_REPOSITORY: cloudsentinel-frontend
+
+jobs:
+  # ============================================================================
+  # JOB 1: LINT AND UNIT TESTS
+  # ============================================================================
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip" # Automatically caches pip dependency layers
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest backend/test_api.py
+
+  # ============================================================================
+  # JOB 2: IAC SECURITY SCANNING (CHECKOV)
+  # ============================================================================
+  iac-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: k8s/
+          framework: kubernetes
+          quiet: false # Shows detailed violation logs
+          soft_fail: false # Fails the pipeline if misconfigurations are found
+
+  # ============================================================================
+  # JOB 3: BUILD AND CONTAINER SECURITY SCANNING (TRIVY)
+  # ============================================================================
+  build-and-scan-images:
+    needs: [test-and-lint, iac-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # --- Build and Scan Backend Image ---
+      - name: Build Backend Image Locally
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          load: true # Loads image into local Docker daemon cache for Trivy to access
+          tags: cloudsentinel-backend:${{ github.sha }}
+
+      - name: Scan Backend Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: cloudsentinel-backend:${{ github.sha }}
+          format: "table"
+          exit-code: "1" # Fails the build if vulnerabilities matching the severity are found
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      # --- Build and Scan Frontend Image ---
+      - name: Build Frontend Image Locally
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          load: true # Loads image into local Docker daemon cache
+          tags: cloudsentinel-frontend:${{ github.sha }}
+
+      - name: Scan Frontend Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: cloudsentinel-frontend:${{ github.sha }}
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+  # ============================================================================
+  # JOB 4: DEPLOY TO AWS ECR & UPDATE GITOPS MANIFESTS
+  # ============================================================================
+  deploy:
+    needs: build-and-scan-images
+    runs-on: ubuntu-latest
+    # Only deploy when pushing directly to main (not on Pull Requests)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Securely log in to AWS using passwordless OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Rebuild and push Backend Image to ECR
+      - name: Push Backend Image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPOSITORY }}:latest
+
+      # Rebuild and push Frontend Image to ECR
+      - name: Push Frontend Image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPOSITORY }}:latest
+
+      # GITOP STAGE: In a true ArgoCD pipeline, this step updates the image tags
+      # in the deployment YAMLs. ArgoCD will then sync the changes automatically.
+      - name: Update Kubernetes Manifest Image Tags
+        run: |
+          sed -i "s|image: cloudsentinel-backend:.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPOSITORY }}:${{ github.sha }}|g" k8s/backend.yaml
+          sed -i "s|image: cloudsentinel-frontend:.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPOSITORY }}:${{ github.sha }}|g" k8s/frontend.yaml
+
+      - name: Commit and Push Image Tag Updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(deploy): update image tags to ${{ github.sha }} [skip ci]"
+          git push

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudsentinel
+  namespace: argocd # Installs the application CRD inside the argocd namespace
+spec:
+  project: default # Uses the default ArgoCD permissions project
+  
+  source:
+    # ArgoCD polls this repository URL for configuration changes
+    repoURL: 'https://github.com/YOUR-GITHUB-USERNAME/CloudSentinel.git'
+    targetRevision: HEAD
+    # The directory inside the repository containing the Kubernetes manifests
+    path: k8s 
+    
+  destination:
+    # Deploys the manifests to the local Kubernetes API server
+    server: 'https://kubernetes.default.svc'
+    # The target namespace where the application pods should run
+    namespace: default
+    
+  syncPolicy:
+    automated:
+      # If a resource manifest (e.g. Service or Pod) is deleted from Git,
+      # ArgoCD will automatically delete it from the Kubernetes cluster.
+      prune: true
+      # If someone manually edits a resource using kubectl, ArgoCD will
+      # detect the drift and overwrite it to match the files in Git.
+      selfHeal: true
+    syncOptions:
+      # Automatically creates the destination namespace if it does not exist
+      - CreateNamespace=true
